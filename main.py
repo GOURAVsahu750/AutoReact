@@ -59,7 +59,7 @@ def force_join(chat_id):
         reply_markup=kb
     )
 
-def buttons(bot_username, owner_username):
+def buttons(bot_username):
     kb = types.InlineKeyboardMarkup()
     kb.row(
         types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{bot_username}?startgroup=true"),
@@ -67,7 +67,7 @@ def buttons(bot_username, owner_username):
     )
     kb.row(
         types.InlineKeyboardButton("🔔 Update Channel", url=UPDATE_CHANNEL),
-        types.InlineKeyboardButton("👤 Owner", url=f"https://t.me/{owner_username}")
+        types.InlineKeyboardButton("👤 Owner", url=f"https://t.me/{OWNER_USERNAME}")
     )
     return kb
 
@@ -95,9 +95,8 @@ def start(m):
         bot.send_message(
             OWNER_ID,
             f"🆕 *New User Started Bot*\n\n"
-            f"👤 Name: {m.from_user.first_name}\n"
-            f"🆔 ID: `{m.from_user.id}`\n"
-            f"🔗 @{m.from_user.username if m.from_user.username else 'NoUsername'}",
+            f"👤 {m.from_user.first_name}\n"
+            f"🆔 `{m.from_user.id}`",
             parse_mode="Markdown"
         )
 
@@ -110,7 +109,7 @@ def start(m):
         f"⏱ Uptime: `{uptime()}`\n\n"
         f"🧪 `/clone BOT_TOKEN`",
         parse_mode="Markdown",
-        reply_markup=buttons(me, OWNER_USERNAME)
+        reply_markup=buttons(me)
     )
 
 # ---------- STATS ----------
@@ -155,10 +154,6 @@ def clone(m):
         force_join(m.chat.id)
         return
 
-    if not m.from_user.username:
-        bot.reply_to(m, "❌ Clone ke liye username zaroori hai")
-        return
-
     try:
         token = m.text.split(" ", 1)[1].strip()
     except:
@@ -175,10 +170,10 @@ def clone(m):
             cb.send_message(
                 x.chat.id,
                 f"🤖 *Auto Reaction Bot*\n\n"
-                f"👤 Owner: @{m.from_user.username}\n"
+                f"👤 Owner: @{OWNER_USERNAME}\n"
                 f"🔗 *This bot is cloned of* {CREDIT}",
                 parse_mode="Markdown",
-                reply_markup=buttons(info.username, m.from_user.username)
+                reply_markup=buttons(info.username)
             )
 
         @cb.channel_post_handler(content_types=["text","photo","video","audio","document"])
@@ -216,6 +211,6 @@ def mgr(m):
 
 # ---------- RUN ----------
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🚀 BOT STARTED | OWNER: @g0ztg")
+print("🚀 BOT STARTED | OWNER FIXED: @g0ztg")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 bot.infinity_polling(timeout=10, long_polling_timeout=5)

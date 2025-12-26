@@ -26,7 +26,7 @@ from telebot import types
 from telebot.types import ReactionTypeEmoji
 
 # ---------- ⚙️ SETTINGS ----------
-BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"   # ⚠️ quotes zaroori hain
+BOT_TOKEN = "8524165654:AAEzAoGynkcKJfHDHgFf35xZCoev95aI1jk"   # ⚠️ quotes zaroori hain
 
 OWNER_USERNAME = "@g0ztg"
 SUPPORT_CHANNEL_LINK = "https://t.me/TITANXBOTMAKING"

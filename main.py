@@ -26,7 +26,7 @@ from telebot import types
 from telebot.types import ReactionTypeEmoji
 
 # ---------- ⚙️ SETTINGS ----------
-BOT_TOKEN = "8524165654:AAEzAoGynkcKJfHDHgFf35xZCoev95aI1jk"   # <-- yahan apna bot token dalo
+BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"   # <-- yahan token paste karo
 
 OWNER_USERNAME = "@g0ztg"
 SUPPORT_CHANNEL_LINK = "https://t.me/TITANXBOTMAKING"
@@ -50,9 +50,9 @@ def get_uptime():
     h, m = divmod(m, 60)
     return f"{h}h {m}m {s}s"
 
-def log_reaction(chat, emoji, ctype):
+def log_reaction(chat, count, ctype):
     t = datetime.now().strftime("%H:%M:%S")
-    print(f"[{t}] {emoji} reacted | {chat} ({ctype})")
+    print(f"[{t}] {count} reactions sent | {chat} ({ctype})")
 
 # ---------- COMMANDS ----------
 @bot.message_handler(commands=["start"])
@@ -69,7 +69,7 @@ def start_cmd(message):
         f"━━━━━━━━━━━━━━\n"
         f"🟢 Status: Online\n"
         f"⏱ Uptime: {get_uptime()}\n"
-        f"🔥 Reactions: 10–15\n"
+        f"🔥 Mode: Multi-Reaction\n"
         f"👑 Owner: {OWNER_USERNAME}\n"
         f"━━━━━━━━━━━━━━"
     )
@@ -94,24 +94,26 @@ def status_cmd(message):
         f"📊 *Bot Status*\n\n"
         f"📶 Ping: `{ping}ms`\n"
         f"⏱ Uptime: `{get_uptime()}`\n"
-        f"🚀 Mode: `10–15 Reactions`",
+        f"🚀 Reaction Mode: `Bulk (No Replace)`",
         parse_mode="Markdown"
     )
 
-# ---------- ❤️ REACTION ENGINE ----------
+# ---------- ❤️ FIXED REACTION ENGINE ----------
 def perform_reaction(chat_id, msg_id, title, ctype):
     try:
-        time.sleep(random.uniform(1, 2))
-        count = random.randint(10, 15)
-        emojis = random.sample(REACTION_LIST, min(count, len(REACTION_LIST)))
+        time.sleep(1)
 
-        for e in emojis:
-            try:
-                bot.set_message_reaction(chat_id, msg_id, [ReactionTypeEmoji(e)])
-                log_reaction(title, e, ctype)
-                time.sleep(0.3)
-            except:
-                pass
+        # 10+ reactions ek hi call me
+        emojis = random.sample(REACTION_LIST, 10)
+
+        bot.set_message_reaction(
+            chat_id,
+            msg_id,
+            [ReactionTypeEmoji(e) for e in emojis]
+        )
+
+        log_reaction(title, len(emojis), ctype)
+
     except Exception as err:
         print("Reaction error:", err)
 
@@ -134,7 +136,7 @@ def group_msg(message):
 
 # ---------- START ----------
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🚀 10+ AUTO REACTION BOT STARTED")
+print("🚀 MULTI-REACTION BOT STARTED")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 bot.infinity_polling(timeout=10, long_polling_timeout=5)

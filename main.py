@@ -1,197 +1,221 @@
-import subprocess
-import sys
-import time
-import random
-import threading
+import subprocess, sys, time, random, threading
 from datetime import datetime
 
 # ---------- AUTO INSTALL ----------
-def install_package(pkg):
+def install(pkg):
     try:
         __import__(pkg if pkg != "pyTelegramBotAPI" else "telebot")
     except ImportError:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
-install_package("pyTelegramBotAPI")
+install("pyTelegramBotAPI")
 
 # ---------- IMPORTS ----------
 import telebot
 from telebot import types
 from telebot.types import ReactionTypeEmoji
 
-# ---------- SETTINGS ----------
+# ---------- CONFIG ----------
 MAIN_BOT_TOKEN = "8524165654:AAEzAoGynkcKJfHDHgFf35xZCoev95aI1jk"
 
-FORCE_JOIN_CHANNEL = "@TITANXBOTMAKING"
-FORCE_JOIN_LINK = "https://t.me/TITANXBOTMAKING"
-CLONE_CREDIT = "@TITANXBOTMAKING"
+OWNER_ID = 8453291493
+OWNER_USERNAME = "g0ztg"
 
-REACTION_LIST = ["❤️", "🔥", "👍", "😍", "⚡"]
+FORCE_JOIN = "@TITANXBOTMAKING"
+FORCE_JOIN_LINK = "https://t.me/TITANXBOTMAKING"
+UPDATE_CHANNEL = "https://t.me/TITANXBOTMAKING"
+CREDIT = "@TITANXBOTMAKING"
+
+REACTIONS = ["❤️", "🔥", "👍", "😍", "⚡"]
 START_TIME = time.time()
 
+USERS = set()
+CLONES = []
+
 # ---------- BOT ----------
-main_bot = telebot.TeleBot(MAIN_BOT_TOKEN, threaded=True)
+bot = telebot.TeleBot(MAIN_BOT_TOKEN, threaded=True)
 
 # ---------- HELPERS ----------
-def get_uptime():
+def uptime():
     s = int(time.time() - START_TIME)
     m, s = divmod(s, 60)
     h, m = divmod(m, 60)
     return f"{h}h {m}m {s}s"
 
-def single_react(bot, chat_id, msg_id):
+def is_joined(uid):
     try:
-        bot.set_message_reaction(
-            chat_id,
-            msg_id,
-            [ReactionTypeEmoji(random.choice(REACTION_LIST))]
-        )
-    except:
-        pass
-
-def is_joined(user_id):
-    try:
-        member = main_bot.get_chat_member(FORCE_JOIN_CHANNEL, user_id)
-        return member.status in ["member", "administrator", "creator"]
+        m = bot.get_chat_member(FORCE_JOIN, uid)
+        return m.status in ["member", "administrator", "creator"]
     except:
         return False
 
-def force_join_msg(chat_id):
+def force_join(chat_id):
     kb = types.InlineKeyboardMarkup()
     kb.add(types.InlineKeyboardButton("📢 Join Channel", url=FORCE_JOIN_LINK))
-    main_bot.send_message(
+    bot.send_message(
         chat_id,
-        "🚫 *Access Denied*\n\n"
-        "Bot use karne ke liye pehle channel join karo 👇",
+        "🚫 *Pehle channel join karo*",
         parse_mode="Markdown",
         reply_markup=kb
     )
 
-def build_buttons(bot_username, owner_username, channel_link):
+def buttons(bot_username, owner_username):
     kb = types.InlineKeyboardMarkup()
     kb.row(
         types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{bot_username}?startgroup=true"),
-        types.InlineKeyboardButton("📢 Channel", url=channel_link)
+        types.InlineKeyboardButton("📢 Add to Channel", url=f"https://t.me/{bot_username}?startchannel=true")
     )
     kb.row(
+        types.InlineKeyboardButton("🔔 Update Channel", url=UPDATE_CHANNEL),
         types.InlineKeyboardButton("👤 Owner", url=f"https://t.me/{owner_username}")
     )
     return kb
 
-# ---------- MAIN /START ----------
-@main_bot.message_handler(commands=["start"])
-def start_cmd(message):
-    if not is_joined(message.from_user.id):
-        force_join_msg(message.chat.id)
+def react(b, chat_id, msg_id):
+    try:
+        b.set_message_reaction(
+            chat_id,
+            msg_id,
+            [ReactionTypeEmoji(random.choice(REACTIONS))]
+        )
+    except:
+        pass
+
+# ---------- START ----------
+@bot.message_handler(commands=["start"])
+def start(m):
+    if not is_joined(m.from_user.id):
+        force_join(m.chat.id)
         return
 
-    bot_user = main_bot.get_me().username
-    text = (
+    new = m.from_user.id not in USERS
+    USERS.add(m.from_user.id)
+
+    if new:
+        bot.send_message(
+            OWNER_ID,
+            f"🆕 *New User Started Bot*\n\n"
+            f"👤 Name: {m.from_user.first_name}\n"
+            f"🆔 ID: `{m.from_user.id}`\n"
+            f"🔗 @{m.from_user.username if m.from_user.username else 'NoUsername'}",
+            parse_mode="Markdown"
+        )
+
+    me = bot.get_me().username
+    bot.send_message(
+        m.chat.id,
         f"🤖 *Auto Reaction Bot*\n\n"
         f"❤️ Single Reaction Mode\n"
         f"🧬 Clone System Enabled\n"
-        f"⏱ Uptime: {get_uptime()}\n\n"
-        f"🧪 `/clone BOT_TOKEN`"
-    )
-
-    kb = types.InlineKeyboardMarkup()
-    kb.row(
-        types.InlineKeyboardButton("➕ Add to Group", url=f"https://t.me/{bot_user}?startgroup=true"),
-        types.InlineKeyboardButton("📢 Channel", url=FORCE_JOIN_LINK)
-    )
-
-    main_bot.send_message(
-        message.chat.id,
-        text,
+        f"⏱ Uptime: `{uptime()}`\n\n"
+        f"🧪 `/clone BOT_TOKEN`",
         parse_mode="Markdown",
-        reply_markup=kb
+        reply_markup=buttons(me, OWNER_USERNAME)
     )
 
-# ---------- CLONE COMMAND ----------
-@main_bot.message_handler(commands=["clone"])
-def clone_cmd(message):
-    if not is_joined(message.from_user.id):
-        force_join_msg(message.chat.id)
+# ---------- STATS ----------
+@bot.message_handler(commands=["stats"])
+def stats(m):
+    if m.from_user.id != OWNER_ID:
         return
+    bot.reply_to(
+        m,
+        f"📊 *Bot Stats*\n\n"
+        f"👥 Users: `{len(USERS)}`\n"
+        f"🤖 Clones: `{len(CLONES)}`\n"
+        f"⏱ Uptime: `{uptime()}`",
+        parse_mode="Markdown"
+    )
 
-    if not message.from_user.username:
-        main_bot.reply_to(message, "❌ Clone ke liye username zaroori hai")
+# ---------- BROADCAST ----------
+@bot.message_handler(commands=["broadcast"])
+def broadcast(m):
+    if m.from_user.id != OWNER_ID:
         return
-
     try:
-        token = message.text.split(" ", 1)[1].strip()
+        msg = m.text.split(" ", 1)[1]
     except:
-        main_bot.reply_to(message, "❌ Usage:\n/clone BOT_TOKEN")
+        bot.reply_to(m, "❌ Usage:\n/broadcast message")
         return
 
-    cloner_username = message.from_user.username
-    cloner_profile = f"https://t.me/{cloner_username}"
+    sent = 0
+    for uid in USERS:
+        try:
+            bot.send_message(uid, msg)
+            sent += 1
+        except:
+            pass
+
+    bot.reply_to(m, f"✅ Broadcast sent to `{sent}` users", parse_mode="Markdown")
+
+# ---------- CLONE ----------
+@bot.message_handler(commands=["clone"])
+def clone(m):
+    if not is_joined(m.from_user.id):
+        force_join(m.chat.id)
+        return
+
+    if not m.from_user.username:
+        bot.reply_to(m, "❌ Clone ke liye username zaroori hai")
+        return
 
     try:
-        clone_bot = telebot.TeleBot(token, threaded=True)
-        info = clone_bot.get_me()
-        clone_username = info.username
+        token = m.text.split(" ", 1)[1].strip()
+    except:
+        bot.reply_to(m, "❌ Usage:\n/clone BOT_TOKEN")
+        return
 
-        # ----- CLONE /START -----
-        @clone_bot.message_handler(commands=["start"])
-        def clone_start(msg):
-            text = (
+    try:
+        cb = telebot.TeleBot(token, threaded=True)
+        info = cb.get_me()
+        CLONES.append(info.username)
+
+        @cb.message_handler(commands=["start"])
+        def cstart(x):
+            cb.send_message(
+                x.chat.id,
                 f"🤖 *Auto Reaction Bot*\n\n"
-                f"❤️ Single Reaction Mode\n"
-                f"⏱ Uptime: {get_uptime()}\n\n"
-                f"👤 Owner: @{cloner_username}\n"
-                f"🔗 *This bot is cloned of* {CLONE_CREDIT}"
-            )
-            clone_bot.send_message(
-                msg.chat.id,
-                text,
+                f"👤 Owner: @{m.from_user.username}\n"
+                f"🔗 *This bot is cloned of* {CREDIT}",
                 parse_mode="Markdown",
-                reply_markup=build_buttons(
-                    clone_username,
-                    cloner_username,
-                    cloner_profile
-                )
+                reply_markup=buttons(info.username, m.from_user.username)
             )
 
-        # ----- CLONE LISTENERS -----
-        @clone_bot.channel_post_handler(content_types=["text", "photo", "video", "audio", "document"])
-        def clone_channel(msg):
-            single_react(clone_bot, msg.chat.id, msg.id)
+        @cb.channel_post_handler(content_types=["text","photo","video","audio","document"])
+        def ch(x):
+            react(cb, x.chat.id, x.id)
 
-        @clone_bot.message_handler(content_types=["text", "photo", "video", "audio", "document"])
-        def clone_group(msg):
-            if msg.chat.type != "private":
-                single_react(clone_bot, msg.chat.id, msg.id)
+        @cb.message_handler(content_types=["text","photo","video","audio","document"])
+        def gr(x):
+            if x.chat.type != "private":
+                react(cb, x.chat.id, x.id)
 
         threading.Thread(
-            target=lambda: clone_bot.infinity_polling(skip_pending=True),
+            target=lambda: cb.infinity_polling(skip_pending=True),
             daemon=True
         ).start()
 
-        main_bot.reply_to(
-            message,
-            f"✅ *Clone Bot Started!*\n\n"
-            f"🤖 @{clone_username}\n"
-            f"👤 Owner: @{cloner_username}",
+        bot.reply_to(
+            m,
+            f"✅ *Clone Started Successfully*\n\n🤖 @{info.username}",
             parse_mode="Markdown"
         )
 
     except Exception as e:
-        main_bot.reply_to(message, f"❌ Invalid Bot Token\n{e}")
+        bot.reply_to(m, f"❌ Invalid Bot Token\n`{e}`", parse_mode="Markdown")
 
-# ---------- MAIN BOT REACTION ----------
-@main_bot.channel_post_handler(content_types=["text", "photo", "video", "audio", "document"])
-def main_channel(msg):
-    single_react(main_bot, msg.chat.id, msg.id)
+# ---------- MAIN REACTIONS ----------
+@bot.channel_post_handler(content_types=["text","photo","video","audio","document"])
+def mch(m):
+    react(bot, m.chat.id, m.id)
 
-@main_bot.message_handler(content_types=["text", "photo", "video", "audio", "document"])
-def main_group(msg):
-    if msg.chat.type != "private":
-        single_react(main_bot, msg.chat.id, msg.id)
+@bot.message_handler(content_types=["text","photo","video","audio","document"])
+def mgr(m):
+    if m.chat.type != "private":
+        react(bot, m.chat.id, m.id)
 
-# ---------- START ----------
+# ---------- RUN ----------
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🚀 MAIN + CLONE BOT WITH FORCE JOIN RUNNING")
+print("🚀 BOT STARTED | OWNER: @g0ztg")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-main_bot.infinity_polling(timeout=10, long_polling_timeout=5)
+bot.infinity_polling(timeout=10, long_polling_timeout=5)

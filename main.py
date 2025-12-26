@@ -33,7 +33,7 @@ USERS = set()
 CLONES = []
 
 # ---------- BOT ----------
-bot = telebot.TeleBot(MAIN_BOT_TOKEN, threaded=True)
+bot = telebot.TeleBot(MAIN_BOT_TOKEN, threaded=False)
 
 # ---------- HELPERS ----------
 def uptime():
@@ -71,7 +71,7 @@ def buttons(bot_username):
     )
     return kb
 
-def react(b, chat_id, msg_id):
+def react_fast(b, chat_id, msg_id):
     try:
         b.set_message_reaction(
             chat_id,
@@ -94,17 +94,14 @@ def start(m):
     if new:
         bot.send_message(
             OWNER_ID,
-            f"🆕 *New User Started Bot*\n\n"
-            f"👤 {m.from_user.first_name}\n"
-            f"🆔 `{m.from_user.id}`",
-            parse_mode="Markdown"
+            f"🆕 New User\n👤 {m.from_user.first_name}\n🆔 {m.from_user.id}"
         )
 
     me = bot.get_me().username
     bot.send_message(
         m.chat.id,
         f"🤖 *Auto Reaction Bot*\n\n"
-        f"❤️ Single Reaction Mode\n"
+        f"❤️ Fast Reaction Mode\n"
         f"🧬 Clone System Enabled\n"
         f"⏱ Uptime: `{uptime()}`\n\n"
         f"🧪 `/clone BOT_TOKEN`",
@@ -137,15 +134,13 @@ def broadcast(m):
         bot.reply_to(m, "❌ Usage:\n/broadcast message")
         return
 
-    sent = 0
     for uid in USERS:
         try:
             bot.send_message(uid, msg)
-            sent += 1
         except:
             pass
 
-    bot.reply_to(m, f"✅ Broadcast sent to `{sent}` users", parse_mode="Markdown")
+    bot.reply_to(m, "✅ Broadcast sent")
 
 # ---------- CLONE ----------
 @bot.message_handler(commands=["clone"])
@@ -161,7 +156,7 @@ def clone(m):
         return
 
     try:
-        cb = telebot.TeleBot(token, threaded=True)
+        cb = telebot.TeleBot(token, threaded=False)
         info = cb.get_me()
         CLONES.append(info.username)
 
@@ -178,39 +173,43 @@ def clone(m):
 
         @cb.channel_post_handler(content_types=["text","photo","video","audio","document"])
         def ch(x):
-            react(cb, x.chat.id, x.id)
+            react_fast(cb, x.chat.id, x.id)
 
         @cb.message_handler(content_types=["text","photo","video","audio","document"])
         def gr(x):
             if x.chat.type != "private":
-                react(cb, x.chat.id, x.id)
+                react_fast(cb, x.chat.id, x.id)
 
         threading.Thread(
-            target=lambda: cb.infinity_polling(skip_pending=True),
+            target=lambda: cb.infinity_polling(
+                skip_pending=True,
+                timeout=5,
+                long_polling_timeout=5
+            ),
             daemon=True
         ).start()
 
-        bot.reply_to(
-            m,
-            f"✅ *Clone Started Successfully*\n\n🤖 @{info.username}",
-            parse_mode="Markdown"
-        )
+        bot.reply_to(m, f"✅ Clone Started\n🤖 @{info.username}")
 
     except Exception as e:
-        bot.reply_to(m, f"❌ Invalid Bot Token\n`{e}`", parse_mode="Markdown")
+        bot.reply_to(m, f"❌ Invalid Token\n{e}")
 
 # ---------- MAIN REACTIONS ----------
 @bot.channel_post_handler(content_types=["text","photo","video","audio","document"])
 def mch(m):
-    react(bot, m.chat.id, m.id)
+    react_fast(bot, m.chat.id, m.id)
 
 @bot.message_handler(content_types=["text","photo","video","audio","document"])
 def mgr(m):
     if m.chat.type != "private":
-        react(bot, m.chat.id, m.id)
+        react_fast(bot, m.chat.id, m.id)
 
 # ---------- RUN ----------
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🚀 BOT STARTED | OWNER FIXED: @g0ztg")
+print("🚀 FAST REACTION BOT RUNNING | OWNER @g0ztg")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-bot.infinity_polling(timeout=10, long_polling_timeout=5)
+bot.infinity_polling(
+    skip_pending=True,
+    timeout=5,
+    long_polling_timeout=5
+    )

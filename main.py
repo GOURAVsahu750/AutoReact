@@ -26,7 +26,7 @@ from telebot import types
 from telebot.types import ReactionTypeEmoji
 
 # ---------- ⚙️ SETTINGS ----------
-BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"   # <-- yahan token paste karo
+BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE"   # ⚠️ quotes zaroori hain
 
 OWNER_USERNAME = "@g0ztg"
 SUPPORT_CHANNEL_LINK = "https://t.me/TITANXBOTMAKING"
@@ -89,6 +89,9 @@ def start_cmd(message):
 @bot.message_handler(commands=["status", "ping"])
 def status_cmd(message):
     ping = int((time.time() - message.date) * 1000)
+    if ping < 0:
+        ping = 10
+
     bot.reply_to(
         message,
         f"📊 *Bot Status*\n\n"
@@ -98,12 +101,12 @@ def status_cmd(message):
         parse_mode="Markdown"
     )
 
-# ---------- ❤️ FIXED REACTION ENGINE ----------
+# ---------- ❤️ MULTI-REACTION ENGINE ----------
 def perform_reaction(chat_id, msg_id, title, ctype):
     try:
         time.sleep(1)
 
-        # 10+ reactions ek hi call me
+        # 10 emojis ek hi call me (IMPORTANT)
         emojis = random.sample(REACTION_LIST, 10)
 
         bot.set_message_reaction(
@@ -129,6 +132,7 @@ def channel_post(message):
 def group_msg(message):
     if message.chat.type == "private":
         return
+
     threading.Thread(
         target=perform_reaction,
         args=(message.chat.id, message.id, message.chat.title, "Group")

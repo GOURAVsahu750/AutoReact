@@ -5,7 +5,7 @@ import random
 import threading
 from datetime import datetime
 
-# ---------- 🔄 AUTO INSTALL ----------
+# ---------- AUTO INSTALL ----------
 def install_package(pkg):
     try:
         __import__(pkg if pkg != "pyTelegramBotAPI" else "telebot")
@@ -19,16 +19,16 @@ import telebot
 from telebot import types
 from telebot.types import ReactionTypeEmoji
 
-# ---------- ⚙️ SETTINGS ----------
+# ---------- SETTINGS ----------
 BOT_TOKEN = "8524165654:AAEzAoGynkcKJfHDHgFf35xZCoev95aI1jk"
 
 OWNER_USERNAME = "@g0ztg"
-SUPPORT_CHANNEL_LINK = "https://t.me/TITANXBOTMAKING"
 OWNER_LINK = "https://t.me/g0ztg"
+SUPPORT_CHANNEL_LINK = "https://t.me/TITANXBOTMAKING"
 
 REACTION_LIST = [
-    "👍", "🔥", "❤️", "😍", "🥰", "👏", "😁",
-    "🤩", "⚡", "💯", "🎉", "😎", "🚀", "🙌"
+    "👍", "🔥", "❤️", "😍", "🥰", "👏",
+    "😁", "🤩", "⚡", "💯", "🎉"
 ]
 
 START_TIME = time.time()
@@ -43,17 +43,48 @@ def get_uptime():
     h, m = divmod(m, 60)
     return f"{h}h {m}m {s}s"
 
+def log(chat, count, ctype):
+    t = datetime.now().strftime("%H:%M:%S")
+    print(f"[{t}] ❤️ {count} reactions | {chat} ({ctype})")
+
 # ---------- COMMANDS ----------
 @bot.message_handler(commands=["start"])
 def start_cmd(message):
+    user = message.from_user.first_name
+    bot_user = bot.get_me().username
+
+    text = (
+        f"⚡ *Hello {user}*\n\n"
+        f"🤖 *Auto Reaction Bot*\n"
+        f"━━━━━━━━━━━━━━\n"
+        f"🟢 Status: Online\n"
+        f"❤️ Reactions: Multi (+)\n"
+        f"⏱ Uptime: {get_uptime()}\n"
+        f"👑 Owner: {OWNER_USERNAME}\n"
+        f"━━━━━━━━━━━━━━"
+    )
+
+    kb = types.InlineKeyboardMarkup()
+    kb.row(
+        types.InlineKeyboardButton(
+            "➕ Add to Group",
+            url=f"https://t.me/{bot_user}?startgroup=true"
+        ),
+        types.InlineKeyboardButton(
+            "📢 Add to Channel",
+            url=f"https://t.me/{bot_user}?startchannel=true"
+        )
+    )
+    kb.row(
+        types.InlineKeyboardButton("💬 Support Channel", url=SUPPORT_CHANNEL_LINK),
+        types.InlineKeyboardButton("👤 Owner", url=OWNER_LINK)
+    )
+
     bot.send_message(
         message.chat.id,
-        f"🤖 *Auto Reaction Bot*\n\n"
-        f"🔥 Multi-Reaction Mode\n"
-        f"❤️ Reactions: Telegram Allowed\n"
-        f"⏱ Uptime: {get_uptime()}\n"
-        f"👑 Owner: {OWNER_USERNAME}",
-        parse_mode="Markdown"
+        text,
+        parse_mode="Markdown",
+        reply_markup=kb
     )
 
 @bot.message_handler(commands=["status", "ping"])
@@ -67,17 +98,16 @@ def status_cmd(message):
         f"📊 *Bot Status*\n\n"
         f"📶 Ping: `{ping}ms`\n"
         f"⏱ Uptime: `{get_uptime()}`\n"
-        f"❤️ Reaction Mode: `3 emojis (Telegram limit)`",
+        f"❤️ Reaction Mode: `Telegram Safe (3)`",
         parse_mode="Markdown"
     )
 
 # ---------- ❤️ REACTION ENGINE ----------
 def perform_reaction(chat_id, msg_id, title, ctype):
     try:
-        time.sleep(1)
+        time.sleep(1.5)
 
-        # 🔒 Telegram-safe reaction count
-        emojis = random.sample(REACTION_LIST, 3)
+        emojis = random.sample(REACTION_LIST, 3)  # SAFE LIMIT
 
         bot.set_message_reaction(
             chat_id,
@@ -85,22 +115,25 @@ def perform_reaction(chat_id, msg_id, title, ctype):
             [ReactionTypeEmoji(e) for e in emojis]
         )
 
-        t = datetime.now().strftime("%H:%M:%S")
-        print(f"[{t}] ✅ {len(emojis)} reactions | {title} ({ctype})")
+        log(title, len(emojis), ctype)
 
     except Exception as e:
         print("❌ Reaction error:", e)
 
 # ---------- LISTENERS ----------
-@bot.channel_post_handler(content_types=["text", "photo", "video", "audio", "document", "voice"])
+@bot.channel_post_handler(
+    content_types=["text", "photo", "video", "audio", "document", "voice"]
+)
 def channel_post(message):
     threading.Thread(
         target=perform_reaction,
         args=(message.chat.id, message.id, message.chat.title, "Channel")
     ).start()
 
-@bot.message_handler(content_types=["text", "photo", "video", "audio", "document", "voice"])
-def group_msg(message):
+@bot.message_handler(
+    content_types=["text", "photo", "video", "audio", "document", "voice"]
+)
+def group_message(message):
     if message.chat.type == "private":
         return
 
@@ -111,7 +144,7 @@ def group_msg(message):
 
 # ---------- START ----------
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🚀 AUTO MULTI-REACTION BOT STARTED")
+print("🚀 AUTO REACTION BOT STARTED")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 bot.infinity_polling(timeout=10, long_polling_timeout=5)
